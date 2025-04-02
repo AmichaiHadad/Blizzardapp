@@ -1,0 +1,41 @@
+replicaCount: 2
+
+image:
+  repository: amichaihadad2206/blizzard-app
+  tag: latest
+  pullPolicy: Always
+
+ingress:
+  host: app.blizzard.co.il
+  tls:
+    enabled: true
+    secretName: blizzard-app-tls
+
+service:
+  type: ClusterIP
+  port: 5000
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 200m
+    memory: 256Mi
+
+existingSecret:
+  name: openweather-secret
+  key: openweather
+
+# This should be overridden with a real token in production
+apiKeys:
+  openWeatherToken: "placeholder-replace-in-production"
+
+nodeSelector:
+  role: services
+
+tolerations:
+- key: "dedicated"
+  operator: "Equal"
+  value: "services"
+  effect: "NoSchedule" 

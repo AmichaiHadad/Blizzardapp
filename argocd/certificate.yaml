@@ -1,0 +1,12 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: blizzard-app-cert
+  namespace: blizzard-app
+spec:
+  secretName: blizzard-app-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+  - app.blizzard.co.il 

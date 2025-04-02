@@ -1,0 +1,37 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: blizzard-app
+  namespace: argocd
+spec:
+  generators:
+  - git:
+      repoURL: https://github.com/AmichaiHadad/Blizzardapp.git
+      revision: main
+      directories:
+      - path: helm-chart/*
+  template:
+    metadata:
+      name: 'blizzard-app'
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/AmichaiHadad/Blizzardapp.git
+        targetRevision: main
+        path: '{{path}}'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: blizzard-app
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+        - CreateNamespace=true
+        - RespectIgnoreDifferences=true
+        retry:
+          limit: 5
+          backoff:
+            duration: 5s
+            factor: 2
+            maxDuration: 3m 
