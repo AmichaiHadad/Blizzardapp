@@ -1,119 +1,20 @@
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: {{ .Release.Name }}-iam-setup
-  annotations:
-    helm.sh/hook: pre-install,pre-upgrade
-    helm.sh/hook-weight: "-5"
-    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
-spec:
-  backoffLimit: 3
-  template:
-    spec:
-      serviceAccountName: {{ .Release.Name }}-installer-sa
-      restartPolicy: Never
-      containers:
-      - name: aws-cli
-        image: amazon/aws-cli:2.15.0
-        command:
-        - /bin/bash
-        - -c
-        - |
-          set -e
-          
-          # Set variables
-          AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query "Account" --output text || echo "163459217187")
-          AWS_REGION="us-east-1"
-          CLUSTER_NAME=$(aws eks list-clusters --query "clusters[0]" --output text)
-          SECRET_ARN="{{ .Values.awsSecretsManager.secretArn }}"
-          NAMESPACE="{{ .Release.Namespace }}"
-          SERVICE_ACCOUNT="aws-secrets-sa"
-          ROLE_NAME="blizzard-app-secrets-role"
-          POLICY_NAME="blizzard-app-secrets-policy"
-          
-          echo "Using AWS region: $AWS_REGION"
-          echo "Using AWS account ID: $AWS_ACCOUNT_ID"
-          
-          echo "Checking for existing role..."
-          if aws iam get-role --role-name $ROLE_NAME --region $AWS_REGION 2>/dev/null; then
-            echo "Role $ROLE_NAME already exists."
-          else
-            echo "Role does not exist. Creating..."
-            
-            # Get OIDC Provider URL
-            OIDC_PROVIDER=$(aws eks describe-cluster --name $CLUSTER_NAME --region $AWS_REGION --query "cluster.identity.oidc.issuer" --output text | sed 's|https://||')
-            echo "OIDC Provider: $OIDC_PROVIDER"
-            
-            # Create policy document
-            cat > /tmp/secrets-manager-policy.json << EOF
-            {
-                "Version": "2012-10-17",
-                "Statement": [
-                    {
-                        "Effect": "Allow",
-                        "Action": [
-                            "secretsmanager:GetSecretValue",
-                            "secretsmanager:DescribeSecret"
-                        ],
-                        "Resource": [
-                            "${SECRET_ARN}"
-                        ]
-                    }
-                ]
-            }
-            EOF
-            
-            # Create trust policy document
-            cat > /tmp/trust-policy.json << EOF
-            {
-              "Version": "2012-10-17",
-              "Statement": [
-                {
-                  "Effect": "Allow",
-                  "Principal": {
-                    "Federated": "arn:aws:iam::${AWS_ACCOUNT_ID}:oidc-provider/${OIDC_PROVIDER}"
-                  },
-                  "Action": "sts:AssumeRoleWithWebIdentity",
-                  "Condition": {
-                    "StringEquals": {
-                      "${OIDC_PROVIDER}:sub": "system:serviceaccount:${NAMESPACE}:${SERVICE_ACCOUNT}",
-                      "${OIDC_PROVIDER}:aud": "sts.amazonaws.com"
-                    }
-                  }
-                }
-              ]
-            }
-            EOF
-            
-            # Check if policy exists and create if it doesn't
-            if ! aws iam get-policy --policy-arn arn:aws:iam::${AWS_ACCOUNT_ID}:policy/${POLICY_NAME} --region $AWS_REGION 2>/dev/null; then
-              echo "Creating policy ${POLICY_NAME}..."
-              aws iam create-policy \
-                --policy-name $POLICY_NAME \
-                --policy-document file:///tmp/secrets-manager-policy.json \
-                --region $AWS_REGION
-            else
-              echo "Policy ${POLICY_NAME} already exists."
-            fi
-            
-            # Create role
-            echo "Creating role ${ROLE_NAME}..."
-            aws iam create-role \
-                --role-name $ROLE_NAME \
-                --assume-role-policy-document file:///tmp/trust-policy.json \
-                --region $AWS_REGION
-            
-            # Attach policy
-            echo "Attaching policy to role..."
-            aws iam attach-role-policy \
-                --role-name $ROLE_NAME \
-                --policy-arn arn:aws:iam::${AWS_ACCOUNT_ID}:policy/${POLICY_NAME} \
-                --region $AWS_REGION
-            
-            echo "IAM role setup complete."
-          fi
-        env:
-        - name: AWS_REGION
-          value: "us-east-1"
-        - name: AWS_DEFAULT_REGION
-          value: "us-east-1" 
+# IAM Setup job has been temporarily disabled to simplify deployment
+# apiVersion: batch/v1
+# kind: Job
+# metadata:
+#   name: {{ .Release.Name }}-iam-setup
+#   annotations:
+#     helm.sh/hook: pre-install,pre-upgrade
+#     helm.sh/hook-weight: "-5"
+#     helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+#     argocd.argoproj.io/hook: PreSync
+#     argocd.argoproj.io/hook-delete-policy: HookSucceeded
+# spec:
+#   backoffLimit: 3
+#   template:
+#     spec:
+#       serviceAccountName: {{ .Release.Name }}-installer-sa
+#       restartPolicy: Never
+#       containers:
+#       - name: aws-cli
+#         image: amazon/aws-cli:2.15.0
