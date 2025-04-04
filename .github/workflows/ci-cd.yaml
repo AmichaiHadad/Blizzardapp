@@ -48,7 +48,7 @@ jobs:
     - name: Update Helm chart values with new image tag
       if: github.event_name != 'pull_request'
       run: |
-        IMAGE_TAG=${{ github.sha }}
+        IMAGE_TAG=latest
         
         # Update image tag in Helm chart values.yaml
         sed -i "s|tag:.*|tag: $IMAGE_TAG|g" helm-chart/values.yaml
