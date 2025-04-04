@@ -30,9 +30,6 @@ spec:
           volumeMounts:
             - name: tmp-dir
               mountPath: /tmp
-            - name: secrets-store-inline
-              mountPath: "/mnt/secrets-store"
-              readOnly: true
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           securityContext:
@@ -58,12 +55,6 @@ spec:
       volumes:
         - name: tmp-dir
           emptyDir: {}
-        - name: secrets-store-inline
-          csi:
-            driver: secrets-store.csi.k8s.io
-            readOnly: true
-            volumeAttributes:
-              secretProviderClass: {{ .Release.Name }}-aws-secrets
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
