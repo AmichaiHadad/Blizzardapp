@@ -2,7 +2,7 @@ replicaCount: 2
 
 image:
   repository: amichaihadad2206/blizzard-app
-  tag: 7cf580fbcdf6cd7c7ff1aafd99c29278d22ac0c7
+  tag: 856840c075dfd337d15c357d516bbf78a9d6ea23
   pullPolicy: Always
 
 ingress:
