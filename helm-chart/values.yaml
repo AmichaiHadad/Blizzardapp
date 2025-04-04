@@ -2,7 +2,7 @@ replicaCount: 2
 
 image:
   repository: amichaihadad2206/blizzard-app
-  tag: 856840c075dfd337d15c357d516bbf78a9d6ea23
+  tag: latest
   pullPolicy: Always
 
 ingress:
@@ -23,6 +23,7 @@ resources:
 existingSecret:
   name: openweather-secret
   key: openweather
+
 
 # AWS configuration
 awsAccountId: "163459217187"
