@@ -22,6 +22,7 @@ The application deployment includes:
 - Helm (v3+)
 - ArgoCD installed on your EKS cluster
 - Domain name (app.blizzard.co.il) configured in Route53
+- AWS Secrets Store CSI Driver installed on your EKS cluster
 
 ## Deployment Steps
 
@@ -35,7 +36,24 @@ To set up your own repository:
    - `DOCKERHUB_USERNAME`: Your Docker Hub username
    - `DOCKERHUB_TOKEN`: Your Docker Hub access token (create from Docker Hub settings)
 
-### 2. Certificate Configuration
+### 2. AWS Secrets Manager Configuration
+
+This deployment uses AWS Secrets Manager to store sensitive configuration:
+
+```bash
+# Create the secret for OpenWeather API token
+aws secretsmanager create-secret \
+    --name openweather-api-token \
+    --description "API token for OpenWeather service" \
+    --secret-string "your-api-token-here"
+```
+
+The ARN of the created secret is:
+`arn:aws:secretsmanager:us-west-1:163459217187:secret:openweather-api-token-rmLXm9`
+
+This secret value will be mounted in the pod and also synchronized to a Kubernetes secret named `openweather-secret` with key `openweather-api-token`.
+
+### 3. Certificate Configuration
 
 This deployment uses a pre-configured ACM certificate:
 - Certificate ARN: `arn:aws:acm:us-west-1:163459217187:certificate/fff7f866-c1e3-45f2-9520-e8fb9122fa81`
@@ -43,12 +61,7 @@ This deployment uses a pre-configured ACM certificate:
 
 The certificate should be valid for the domain: app.blizzard.co.il
 
-### 3. Deploy Certificate Manager and Cluster Issuer
-
-```bash
-kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.11.0/cert-manager.yaml
-kubectl apply -f argocd/cluster-issuer.yaml
-```
+This certificate is used by the AWS ALB for TLS termination.
 
 ### 4. Deploy the Application with ArgoCD
 
@@ -119,6 +132,8 @@ Then open a browser to https://localhost:8080 and log in to ArgoCD.
 2. **Pods not starting:**
    - Check pod status: `kubectl describe pod <pod-name> -n blizzard-app`
    - Verify node selector and tolerations match your EKS node group labels
+   - Check if AWS Secrets Store CSI Driver is correctly installed and configured
+   - Verify the SecretProviderClass deployment with: `kubectl get secretproviderclass -n blizzard-app`
 
 3. **ArgoCD not syncing:**
    - Check ArgoCD logs: `kubectl logs -n argocd -l app.kubernetes.io/name=argocd-application-controller`
@@ -137,7 +152,8 @@ Then open a browser to https://localhost:8080 and log in to ArgoCD.
    - ALB configured for best security practices
 
 3. **Secret Management:**
-   - OpenWeather API token stored as Kubernetes Secret
+   - OpenWeather API token stored in AWS Secrets Manager
+   - Secrets accessed via AWS Secrets Store CSI Driver
    - Docker Hub credentials stored as GitHub repository secrets
 
 ## Cleanup

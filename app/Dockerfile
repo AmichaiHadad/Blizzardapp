@@ -5,6 +5,12 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Create temp directory with proper permissions
+RUN mkdir -p /app/tmp && chmod 777 /app/tmp
+
+# Set TMPDIR environment variable for Python's tempfile module
+ENV TMPDIR=/app/tmp
+
 COPY app.py .
 
 USER nobody

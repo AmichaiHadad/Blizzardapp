@@ -5,11 +5,9 @@ metadata:
   namespace: argocd
 spec:
   generators:
-  - git:
-      repoURL: https://github.com/AmichaiHadad/Blizzardapp.git
-      revision: main
-      directories:
-      - path: helm-chart/*
+  - list:
+      elements:
+      - name: blizzard-app
   template:
     metadata:
       name: 'blizzard-app'
@@ -18,7 +16,10 @@ spec:
       source:
         repoURL: https://github.com/AmichaiHadad/Blizzardapp.git
         targetRevision: main
-        path: '{{path}}'
+        path: 'helm-chart'
+        helm:
+          valueFiles:
+          - values.yaml
       destination:
         server: https://kubernetes.default.svc
         namespace: blizzard-app
@@ -28,7 +29,6 @@ spec:
           selfHeal: true
         syncOptions:
         - CreateNamespace=true
-        - RespectIgnoreDifferences=true
         retry:
           limit: 5
           backoff:

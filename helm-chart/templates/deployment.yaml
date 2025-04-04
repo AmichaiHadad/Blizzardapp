@@ -2,6 +2,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ .Release.Name }}
+  annotations:
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
@@ -12,6 +14,7 @@ spec:
       labels:
         app: {{ .Release.Name }}
     spec:
+      serviceAccountName: default
       containers:
         - name: {{ .Release.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -23,7 +26,13 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.existingSecret.name }}
-                  key: {{ .Values.existingSecret.key }}
+                  key: openweather
+          volumeMounts:
+            - name: tmp-dir
+              mountPath: /tmp
+            - name: secrets-store-inline
+              mountPath: "/mnt/secrets-store"
+              readOnly: true
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           securityContext:
@@ -33,7 +42,7 @@ spec:
             capabilities:
               drop:
                 - ALL
-            readOnlyRootFilesystem: true
+            readOnlyRootFilesystem: false
           livenessProbe:
             httpGet:
               path: /health
@@ -46,6 +55,15 @@ spec:
               port: 5000
             initialDelaySeconds: 5
             periodSeconds: 10
+      volumes:
+        - name: tmp-dir
+          emptyDir: {}
+        - name: secrets-store-inline
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: {{ .Release.Name }}-aws-secrets
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

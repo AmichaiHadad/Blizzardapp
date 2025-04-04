@@ -7,9 +7,6 @@ image:
 
 ingress:
   host: app.blizzard.co.il
-  tls:
-    enabled: true
-    secretName: blizzard-app-tls
 
 service:
   type: ClusterIP
@@ -27,9 +24,18 @@ existingSecret:
   name: openweather-secret
   key: openweather
 
-# This should be overridden with a real token in production
-apiKeys:
-  openWeatherToken: "placeholder-replace-in-production"
+# AWS configuration
+awsAccountId: "163459217187"
+awsRegion: "us-east-1"
+
+# AWS Secrets Manager configuration
+awsSecretsManager:
+  secretArn: "arn:aws:secretsmanager:us-east-1:163459217187:secret:openweather-secret-bVVhb2"
+
+# IAM Creator configuration - needs permission to create IAM roles/policies
+iamCreator:
+  # This role should already exist and have IAM create permissions
+  roleArn: "arn:aws:iam::163459217187:role/eks-cluster-secrets-store-csi-driver"
 
 nodeSelector:
   role: services
